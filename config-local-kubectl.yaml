@@ -1,0 +1,49 @@
+# sudo $(which ansible-playbook) config-local-kubectl.yaml --private-key="${HOME}/.ssh/acit4430" -i cluster_inventory/inventory.ini --become-user=root --become
+---
+- name: Download Kubernetes admin config
+  hosts: cp # Your control plane node
+  become: true # To access the protected admin.conf file
+  vars:
+    real_user: "{{ lookup('env', 'SUDO_USER') | default(lookup('env', 'USER')) }}"
+    user_home: "/home/{{ real_user }}"
+    kube_config_path: "{{ user_home }}/.kube/config"
+    # kube_config_path: "{{ lookup('env', 'HOME') }}/.kube/config"
+  tasks:
+    - name: Get control plane IP address
+      set_fact:
+        cp_ip_address: "{{ hostvars['cp']['ansible_host'] | default(hostvars['cp']['inventory_hostname']) }}"
+    - debug:
+        msg: "Control Plane IP Address: {{ cp_ip_address }}"
+
+    - name: Create local .kube directory if it doesn't exist
+      file:
+        path: ~/.kube
+        state: directory
+        mode: "0700"
+      delegate_to: localhost
+      become: false
+
+    - name: Fetch admin.conf from control plane
+      fetch:
+        src: /etc/kubernetes/admin.conf
+        dest: "{{ kube_config_path }}"
+        flat: yes
+
+    - name: Set ownership of kube config
+      file:
+        path: "{{ kube_config_path }}"
+        # owner: "{{ ansible_env.USER }}"
+        # group: "{{ ansible_env.USER }}"
+        owner: "{{ real_user }}"
+        group: "{{ real_user }}"
+        mode: "0600"
+      delegate_to: localhost
+      become: false
+
+    - name: Update server address in kubeconfig
+      replace:
+        path: "{{ kube_config_path }}"
+        regexp: "server: https://127.0.0.1:6443"
+        replace: "server: https://{{ cp_ip_address }}:6443"
+      delegate_to: localhost
+      become: true

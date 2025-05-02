@@ -1,0 +1,23 @@
+# wait_for_ssh.yml
+---
+- name: Wait for SSH on Control Plane
+  hosts: kube_control_plane # Target the group defined in your inventory
+  gather_facts: false # No need to gather facts for this simple task
+  connection: local # Run this task from the Ansible controller, not the target
+  become: false # No need for privilege escalation
+
+  tasks:
+    - name: Wait for SSH port (22) to become available
+      ansible.builtin.wait_for:
+        host: "{{ ansible_host }}" # Use the ansible_host variable from inventory
+        port: 22 # Default SSH port
+        delay: 5 # Initial delay before first check (seconds)
+        timeout: 300 # Maximum time to wait (seconds)
+        state: started # Wait until the port is open
+      delegate_to: localhost # Explicitly ensure this runs locally
+      register: ssh_wait_result # Store the result (optional)
+
+    - name: Print SSH status
+      ansible.builtin.debug:
+        msg: "SSH is available on {{ ansible_host }}."
+      when: ssh_wait_result is succeeded # Print only if the wait was successful
