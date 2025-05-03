@@ -62,7 +62,7 @@ kubectl create -f filesystem.yaml
 kubectl create -f csi/cephfs/storageclass.yaml
 
 # check that the pool was created
-kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- bash -c "ceph fs ls"
+# kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- bash -c "ceph fs ls"
 #   name: myfs, metadata pool: myfs-metadata, data pools: [myfs-replicated ]
 # also maybe "ceph osd lspools"
 
@@ -84,7 +84,7 @@ kubectl create -f csi/cephfs/pod.yaml
 kubectl -n rook-ceph patch cephcluster rook-ceph --type merge -p '{"spec":{"dashboard":{"ssl":false, "enabled": true, "port": 8443}}}'
 # not sure if ssl was the problem or the SSH tunnel, but running port forwarding from my laptop to the control plane worked
 # for kubectl to run locally, close the CP:/etc/kubernetes/admin.conf to ~/.kube/config and edit server address
-kubectl port-forward service/rook-ceph-mgr-dashboard 8443:8443 -n rook-ceph
+# kubectl port-forward service/rook-ceph-mgr-dashboard 8443:8443 -n rook-ceph
 
 
 
@@ -94,7 +94,8 @@ kubectl apply -f https://raw.githubusercontent.com/coreos/prometheus-operator/v0
 kubectl wait --for=condition=Ready pod/prometheus-rook-prometheus-0
 
 # start prometheus instances
-cd ~/rook/deploy/examples/monitoring
+# cd rook/deploy/examples/monitoring
+cd monitoring
 kubectl create -f service-monitor.yaml
 kubectl create -f exporter-service-monitor.yaml
 kubectl create -f prometheus.yaml
@@ -104,11 +105,11 @@ kubectl create -f prometheus-service.yaml
 PROMETHEUS_URL="http://$(kubectl -n rook-ceph -o jsonpath={.status.hostIP} get pod prometheus-rook-prometheus-0):30900"
 
 # optional: add grafana through helm
-helm repo add grafana https://grafana.github.io/helm-charts
-helm repo update
-helm install my-release grafana/grafana
-# get password for "admin" user
-kubectl get secret --namespace rook-ceph my-release-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
-# expose grafana
-export GRAFANA_POD_NAME=$(kubectl get pods --namespace rook-ceph -l "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=my-release" -o jsonpath="{.items[0].metadata.name}")
-kubectl --namespace rook-ceph port-forward $GRAFANA_POD_NAME 3000
+# helm repo add grafana https://grafana.github.io/helm-charts
+# helm repo update
+# helm install my-release grafana/grafana
+# # get password for "admin" user
+# kubectl get secret --namespace rook-ceph my-release-grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+# # expose grafana
+# export GRAFANA_POD_NAME=$(kubectl get pods --namespace rook-ceph -l "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=my-release" -o jsonpath="{.items[0].metadata.name}")
+# kubectl --namespace rook-ceph port-forward $GRAFANA_POD_NAME 3000
