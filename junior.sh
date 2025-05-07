@@ -1,22 +1,14 @@
 ### NOTES
 # ssh -L doesn't work with forwarding HTTPS traffic: will need to use kubectl port-forward
-
-### REMEMBER
 # list pods by label:
 # kubectl get pods -l app=rook-ceph-operator
 # wait for a pod to be in the `Running` state:
 # kubectl wait --for=condition=Ready pod -l app=rook-ceph-operator -n rook-ceph --timeout=5m
 
 
-# terraform step
-# ...
+# terraform step: assume 4 nodes are already created and running
 
-# connect to the control plane
-
-# K8S
-# mkdir .kube
-# sudo cp /etc/kubernetes/admin.conf .kube/config
-# sudo chown ubuntu:ubuntu .kube/config
+# K8S step: assume "kubectl" is installed and configured
 
 
 
@@ -43,7 +35,7 @@ kubectl create -f toolbox.yaml
 # kubectl -n rook-ceph rollout status deploy/rook-ceph-tools
 # kubectl wait --for=condition=Ready pod -l app=rook-ceph-tools -n rook-ceph --timeout=5m
 # connect to the toolbox pod
-# kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- bash
+# kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- bash -c "ceph status"
 
 # wait for all OSDs to be "up" and health: "HEALTH_OK"
 #ubuntu@cp:~/rook/deploy/examples$ kubectl -n rook-ceph exec -it deploy/rook-ceph-tools -- bash -c "ceph status" | grep osd

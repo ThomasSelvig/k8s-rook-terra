@@ -19,4 +19,8 @@ docker run --rm -it --mount type=bind,source="$(pwd)/${INV_FOLDER}",dst=/invento
     quay.io/kubespray/kubespray:v2.27.0 bash -c "ansible-playbook -i /inventory/inventory.ini --private-key /root/.ssh/id_rsa cluster.yml --become-user=root --become"
 
 # download kubeconfig
+echo -e "\nDone installing kubernetes! Now downloading kubeconfig. Press enter to continue."
+read -r
 sudo $(which ansible-playbook) config-local-kubectl.yaml --private-key="${HOME}/.ssh/acit4430" -i cluster_inventory/inventory.ini --become-user=root --become
+
+# run main config script

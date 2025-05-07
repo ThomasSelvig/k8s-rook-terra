@@ -13,9 +13,10 @@ provider "openstack" {
 
 # create the kubernetes nodes
 resource "openstack_compute_instance_v2" "kube_node" {
-  name            = "k8s-node-${count.index}"
-  image_name      = "Ubuntu 22.04-LTS (Jammy Jellyfish)"
-  flavor_name     = "aem.2c4r.50g"
+  name       = "k8s-node-${count.index}"
+  image_name = "Ubuntu 22.04-LTS (Jammy Jellyfish)"
+  # flavor_name     = "aem.2c4r.50g"
+  flavor_name     = "aem.4c8r.50g"
   security_groups = ["default", "acit4430 io7"]
   key_pair        = "thomas laptop acit4430"
   count           = 4
@@ -41,7 +42,7 @@ resource "openstack_compute_volume_attach_v2" "kube_node_vol_attach" {
 
 resource "local_file" "kubespray_inventory" {
   content = <<-EOT
-    cp ansible_host=${openstack_compute_instance_v2.kube_node[0].access_ip_v4} etcd_member_name=etcd1 ansible_user=ubuntu
+    cp ansible_host=${openstack_compute_instance_v2.kube_node[0].access_ip_v4} ansible_user=ubuntu
     node1 ansible_host=${openstack_compute_instance_v2.kube_node[1].access_ip_v4} ansible_user=ubuntu
     node2 ansible_host=${openstack_compute_instance_v2.kube_node[2].access_ip_v4} ansible_user=ubuntu
     node3 ansible_host=${openstack_compute_instance_v2.kube_node[3].access_ip_v4} ansible_user=ubuntu
