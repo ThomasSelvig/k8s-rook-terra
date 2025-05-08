@@ -2,7 +2,7 @@
 
 TMP_DIR="$(mktemp -d)"
 ROOT_DIR="$(pwd)"
-# trap 'rm -rf "$TMPDIR"' EXIT
+trap 'rm -rf "$TMPDIR"' EXIT
 
 # set -e # Exit immediately if a command exits with a non-zero status
 # set -x # Print commands and their arguments as they are executed
@@ -194,14 +194,20 @@ kubectl create namespace kasten-io
 helm install k10 kasten/k10 --namespace=kasten-io --verify --keyring="$TMP_DIR/RPM-KASTEN"
 # kasten ends up not fully starting, so don't wait for it. the dashboard works when port worwarding anyway
 
+# install loki for centralized logging
+helm upgrade --install loki grafana/loki-stack
 
-echo "Installation completed!"
+for (( i = 0; i < 15; i++ )); do
+  echo
+done
+
+echo -e "Installation completed!\n"
 PROMETHEUS_IP=$(kubectl -n rook-ceph -o jsonpath={.status.hostIP} get pod prometheus-rook-prometheus-0)
 if [ -n "$PROMETHEUS_IP" ]; then
   echo "Rook-Prometheus should be accessible at http://$PROMETHEUS_IP:30900"
-  echo "Try graphing ceph_cluster_total_bytes and ceph_cluster_used_bytes"
 else
   echo "Could not determine Rook Prometheus IP. Check if the pod is running with: kubectl get pods -n rook-ceph -l app=prometheus"
 fi
 echo "run ./port_forward_kasten.sh to access the Kasten dashboard"
 echo "run ./port_forward_cephdash.sh to access the Ceph dashboard"
+echo "run ./port_forward_monitoring.sh to access the monitoring kube-prometheus dashboard"
