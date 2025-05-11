@@ -59,7 +59,7 @@ resource "local_file" "kubespray_inventory" {
     node3
   EOT
 
-  filename = "../cluster_inventory/inventory.ini"
+  filename = "../inventory.ini"
 }
 
 output "slave_ip" {
