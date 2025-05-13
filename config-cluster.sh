@@ -4,12 +4,6 @@ TMP_DIR="$(mktemp -d)"
 ROOT_DIR="$(pwd)"
 trap 'rm -rf "$TMPDIR"' EXIT
 
-# set -e # Exit immediately if a command exits with a non-zero status
-# set -x # Print commands and their arguments as they are executed
-
-# terraform step: assume 4 nodes are already created and running
-# K8S step: assume "kubectl" is installed and configured
-
 # Function to wait for a resource to be ready
 wait_for_resource() {
   local RESOURCE_TYPE=$1
@@ -41,9 +35,6 @@ kubectl create -f crds.yaml -f common.yaml -f operator.yaml -n rook-ceph
 echo "Waiting for rook-ceph-operator to be running..."
 # Wait for operator pod to be ready
 wait_for_resource "pod" "app=rook-ceph-operator" "rook-ceph" "5m"
-
-# set default namespace to rook-ceph
-# kubectl config set-context --current --namespace rook-ceph
 
 # create a cluster
 echo "Creating Ceph cluster..."
@@ -186,6 +177,20 @@ kubectl apply -f prometheus-service.yaml
 echo "Waiting for Prometheus pod to be ready..."
 wait_for_resource "pod" "app=prometheus" "rook-ceph" "5m"
 # kubectl wait --for=condition=Ready pod -l app=prometheus -n rook-ceph --timeout=5m || true
+
+# enable CSI capabilities
+kubectl create namespace snapshot-controller
+# Install CRDs for volume snapshots
+kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v6.2.1/client/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v6.2.1/client/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v6.2.1/client/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml
+# Install snapshot controller and RBAC rules
+kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v6.2.1/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/v6.2.1/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml
+kubectl kustomize https://github.com/kubernetes-csi/external-snapshotter/deploy/kubernetes/csi-snapshotter | kubectl create -f -
+# enable ceph to snapshot. allows ceph-rook to be a CSI provisioner for kasten
+kubectl apply -f "$ROOT_DIR/cephfs-snapshot-class.yaml"
+kubectl apply -f "$ROOT_DIR/cephfs-snapshot-class-rbd.yaml"
 
 # Setup backup with Kasten
 wget https://repository.veeam.com/keys/RPM-KASTEN -O "$TMP_DIR/RPM-KASTEN"
